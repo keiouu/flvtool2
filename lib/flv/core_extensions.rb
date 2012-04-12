@@ -25,31 +25,15 @@
 
 
 class Time
+  #TODO: Figure out why we need to monkey-patch the Time class at all...
   alias :to_str :to_s
-  DAY_NAME = [
-    'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
-  ]
-  MONTH_NAME = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ]
   def to_s
-    sprintf('%s %s %d %02d:%02d:%02d GMT',
-      DAY_NAME[wday],
-      MONTH_NAME[mon-1], day,
-      hour, min, sec) +
-      (
-        off = Time.now.gmtoff
-        sign = off < 0 ? '-' : '+'
-        sprintf('%s%02d%02d', sign, *(off.abs / 60).divmod(60))
-      ) +
-      (
-        sprintf(' %d', year)
-      )
+    # Looks like: Wed Apr 11 22:36:29 GMT-0400 2012
+    strftime("%a %b %d %H:%M:%S GMT%z %Y")
   end
   def to_iso
-    offset = Time.now.gmtoff
-    strftime("%Y-%m-%dT%H:%m:%S#{sprintf('%s%02d:%02d', (offset < 0 ? '-' : '+'), *(offset.abs / 60).divmod(60))}")
+    # Looks like: 2012-04-11T22:30:24-04:00
+    strftime("%Y-%m-%dT%H:%M:%S%:z")
   end
 end
 
@@ -63,27 +47,28 @@ end
 class IO
   def read__UI8(position = nil)
     seek position unless position.nil?
-    readchar
+    readbyte
   end
   
   def read__UI16(position = nil)
     seek position unless position.nil?
-    (readchar << 8) + readchar
+    (readbyte << 8) + readbyte
   end
   
   def read__UI24(position = nil)
     seek position unless position.nil?
-    (readchar << 16) + (readchar << 8) + readchar
+    (readbyte << 16) + (readbyte << 8) + readbyte
   end
   
   def read__UI32(position = nil)
     seek position unless position.nil?
-    (readchar << 24) + (readchar << 16) + (readchar << 8) + readchar
+    (readbyte << 24) + (readbyte << 16) + (readbyte << 8) + readbyte
   end
   
   def read__STRING(length, position = nil)
     seek position unless position.nil?
-    read length
+    string = read length
+    string.to_s
   end
   
   
@@ -113,6 +98,10 @@ end
 class ARGFWrapper
   def readchar
     ARGF.readchar
+  end
+  
+  def readbyte
+    ARGF.readbyte
   end
   
   def read(length)
