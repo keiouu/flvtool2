@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<tags>
+	<metatag event="onCuePoint">
+		<timestamp>62166</timestamp>
+		<type>navigation</type>
+		<parameters>
+			<index>1</index>
+			<title>Introduction</title>
+		</parameters>
+	</metatag>
+	<metatag event="onCuePoint">
+		<timestamp>407500</timestamp>
+		<type>navigation</type>
+		<parameters>
+			<index>2</index>
+			<title>First Section</title>
+		</parameters>
+	</metatag>
+	<metatag event="onCuePoint">
+		<timestamp>832700</timestamp>
+		<type>navigation</type>
+		<parameters>
+			<index>3</index>
+			<title>Second Section</title>
+		</parameters>
+	</metatag>
+	<metatag event="onCuePoint">
+		<timestamp>2228966</timestamp>
+		<type>navigation</type>
+		<parameters>
+			<index>4</index>
+			<title>Third Section</title>
+		</parameters>
+	</metatag>
+	<metatag event="onCuePoint">
+		<timestamp>2338200</timestamp>
+		<type>navigation</type>
+		<parameters>
+			<index>5</index>
+			<title>Conclusions</title>
+		</parameters>
+	</metatag>
+</tags>
