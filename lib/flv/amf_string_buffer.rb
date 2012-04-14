@@ -41,7 +41,7 @@ class AMFStringBuffer
   end
   
   def readchar
-    read(1).unpack('C').first
+    read(1).to_s.unpack('C').first
   end
   
   def write(str)
@@ -64,7 +64,7 @@ class AMFStringBuffer
   end
 
   def eof?
-    @pos == length
+    @pos >= length
   end
 
   def pos
@@ -76,7 +76,11 @@ class AMFStringBuffer
   end
   
   def read__AMF_double
-    num = read(8).unpack('G').first.to_f
+    begin
+      num = read(8).unpack('G').first.to_f
+    rescue
+      puts 'went past the stream length #{@pos} + 8 > #{buffer.length}'
+    end
   end
 
   def read__AMF_boolean
@@ -87,7 +91,12 @@ class AMFStringBuffer
     size = read__UI32 # is not used
     hash = {}
     while !eof?
-      key = read__AMF_string
+      begin
+        key = read__AMF_string
+      rescue EOFError
+        puts 'went past the stream length #{@pos} + __UI16 > #{buffer.length}'
+      end
+      
       break if key.empty? && (type = read__UI8) == 9
       hash[key] = read__AMF_data(type)
     end
@@ -97,7 +106,12 @@ class AMFStringBuffer
   def read__AMF_object
     object = Object.new
     while !eof?
-      key = read__AMF_string
+      begin
+        key = read__AMF_string
+      rescue EOFError
+        puts 'went past the stream length #{@pos} + __UI16 > #{@buffer.length}'
+      end
+      
       break if key.empty? && (type = read__UI8) == 9
       object.instance_variable_set( eval(":@#{key}"), read__AMF_data(type) )
     end
@@ -213,7 +227,7 @@ class AMFStringBuffer
     write__UI8 3
     
     object.instance_variables.each do |variable|
-      write__AMF_key variable.gsub('@', '')
+      write__AMF_key variable.to_s.gsub('@', '')
       write__AMF_data object.instance_variable_get( variable.intern )
     end
     
@@ -223,6 +237,8 @@ class AMFStringBuffer
   
   # FIXME: This methods are copied from flv_stream.rb. Should get in here per
   # include? or something like this.
+  
+  # These methods are used to unpack the data in the @buffer
   def read__UI8
     readchar
   end
@@ -240,11 +256,12 @@ class AMFStringBuffer
   end
   
   def read__STRING(length)
-    read length
+    string = read length
+    string.to_s
   end
     
   def read__SI16
-    read(2).reverse.unpack('s').first.to_i
+    read(2).to_s.reverse.unpack('s').first.to_i
   end
   
   def write__UI8(value)

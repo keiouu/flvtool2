@@ -38,13 +38,16 @@ class Time
 end
 
 class Float
+  #TODO: Name this patch method something else
   alias :to_str :to_s
   def to_s
-     to_f % 1 == 0 ? to_i.to_s : to_str
+    # Don't include the decimal point if it's a whole number
+    to_i == self ? to_i.to_s : to_str
   end
 end
 
 class IO
+  # Patching methods to help us read byte directly from the file
   def read__UI8(position = nil)
     seek position unless position.nil?
     readbyte
@@ -92,39 +95,5 @@ class IO
   def write__STRING(string, position = nil)
     seek position unless position.nil?
     write string
-  end
-end
-
-class ARGFWrapper
-  def readchar
-    ARGF.readchar
-  end
-  
-  def readbyte
-    ARGF.readbyte
-  end
-  
-  def read(length)
-    ARGF.read(length)
-  end
-  
-  def read__UI8
-    readchar
-  end
-  
-  def read__UI16
-    (readchar << 8) + readchar
-  end
-  
-  def read__UI24
-    (readchar << 16) + (readchar << 8) + readchar
-  end
-  
-  def read__UI32
-    (readchar << 24) + (readchar << 16) + (readchar << 8) + readchar
-  end
-  
-  def read__STRING(length)
-    read length
   end
 end
