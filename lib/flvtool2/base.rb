@@ -145,8 +145,12 @@ module FLVTool2
         # Otherwise, we can assume that the metadata on the input file is
         # already in a correct and current format, and that updating it isn't
         # necessary.
-        metadata_creator_mismatched = stream.on_meta_data_tag.meta_data['metadatacreator'] != options[:metadatacreator]
-        metadata_not_available = !stream.on_meta_data_tag || (stream.on_meta_data_tag && metadata_creator_mismatched)
+        metadata_present = stream.on_meta_data_tag
+        if (metadata_present)
+          metadata_creator_mismatched = stream.on_meta_data_tag.meta_data['metadatacreator'] != options[:metadatacreator]
+        end
+        
+        metadata_not_available = !metadata_present ||  metadata_creator_mismatched
         if (metadata_not_available || !options[:preserve])
            add_meta_data_tag( stream, options )
            return true
