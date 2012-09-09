@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# NOTE: core_extensions monkey-patches several classes, including IO
 require 'flv/core_extensions'
 require 'flv/tag'
 require 'flv/audio_tag'
@@ -46,14 +47,14 @@ module FLV
                   :stream_log
     
     def initialize(in_stream, out_stream = nil, stream_log = false)
-
-      
       @stream_log = stream_log ? (File.open('stream.log', File::CREAT|File::WRONLY|File::TRUNC) rescue AMFStringBuffer.new) : AMFStringBuffer.new
       @in_stream = in_stream
       @out_stream = out_stream || in_stream
 
       unless eof?
         begin
+          # Parses out the header of the FLV file, and tokenizes
+          # the ENTIRE file into FLVTag objects
           read_header
           read_tags
         rescue Object => e
@@ -81,20 +82,23 @@ module FLV
         # FIXME: Does not really work for video or audio tags, because tags are
         #        inserted next to same kind. Normally audio and video tags are 
         #        alternating.
-        if stick_on_framerate && !framerate.nil? &&framerate != 0 && tag.timestamp % (1000 / framerate) != 0
+        if stick_on_framerate && !framerate.nil? && framerate != 0 && tag.timestamp % (1000 / framerate) != 0
           raise FLVTagError, "Could not insert tag. Timestamp #{tag.timestamp} does not fit into framerate."
           next
         end
         
+        # FIXME: Need a more performant way to find the next tag.  Perhaps
+        #  we can use an enumeration and #peek? --EKP
         after_tag = @tags.detect { |_tag| _tag.timestamp >= tag.timestamp }
-        
         if after_tag.nil?
           @tags << tag
           next
         end
 
         if tag.timestamp == after_tag.timestamp && tag.class == after_tag.class
-          if tag.kind_of?(FLVMetaTag) && ( ( tag.event != after_tag.event ) || ( tag.event == after_tag.event && !overwrite ) )
+          # In the event that we have a tag that might match another tag in type and position,
+          # we need to decide if we're replacing it or overwriting it
+          if tag.kind_of?(FLVMetaTag) && ( ( tag.event != after_tag.event ) || !overwrite )
             @tags.insert( @tags.index(after_tag), tag )
           else
             @tags[@tags.index(after_tag)] = tag
@@ -169,7 +173,6 @@ module FLV
     end
     
     def write
-
       begin
         @out_stream.seek( 0 )
       rescue Object => e
@@ -248,22 +251,26 @@ module FLV
     
     # meta data
 
-    # FIXME: Could be less complicate and run faster
     def frame_sequence
       return nil unless has_video?
       raise(FLVStreamError, 'File has to contain at least 2 video tags to calculate frame sequence') if video_tags.length < 2
 
-      @frame_sequence ||=
-      begin
-        sequences = video_tags.collect do |tag| # find all sequences
-          video_tags[video_tags.index(tag) + 1].timestamp - tag.timestamp unless tag == video_tags.last
+      @frame_sequence ||= begin
+        # calculate the elapsed times between all tags and
+        # put them into a Hash
+        sequences = Hash.new(0)
+
+        last_tag_index = video_tags.length - 1
+        video_tags.each_index do |index|
+          unless index == last_tag_index
+            sequence_length = video_tags[index + 1].timestamp - video_tags[index].timestamp
+            sequences[sequence_length] += 1
+          end
         end.compact
-        
-        uniq_sequences = (sequences.uniq - [0]).sort # remove 0 and try smallest intervall first 
-        
-        sequence_appearances = uniq_sequences.collect { |sequence| sequences.find_all { |_sequence| sequence == _sequence }.size } # count apperance of each sequence
-        
-        uniq_sequences[ sequence_appearances.index( sequence_appearances.max ) ] # return the sequence that appears most
+
+        # get the largest value from the Hash
+        max_value = sequences.max_by { |k, v| v }
+        max_value.first
       end
     end
     
@@ -445,6 +452,9 @@ module FLV
         end
       end
       
+      # Parses the ENTIRE input, turning it into an Array of
+      # FLVTag objects, each of which contains a single small
+      # chunk of the input.
       def read_tags
         @tags ||= []
         
@@ -469,12 +479,10 @@ module FLV
           else
             @tags << FLVTag.new(@in_stream)
           end
-
         end
         
         if $VERBOSE
-          total_known_tags =
-            audio_tags.size + video_tags.size + meta_tags.size
+          total_known_tags = audio_tags.size + video_tags.size + meta_tags.size
           out =  "Read tags: #{audio_tags.size} audio, #{video_tags.size} video,"
           out << " #{meta_tags.size} meta,"
           out << " #{@tags.size - total_known_tags} unknown,"
@@ -484,7 +492,6 @@ module FLV
       end
       
       def write_tags
-        
         @out_stream.write__UI32 0
 
         count = 0

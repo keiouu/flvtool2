@@ -1,1 +1,6 @@
 pkg
+
+*.swp
+.DS_Store
+*-processed.flv
+*.log

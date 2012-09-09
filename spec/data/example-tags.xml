@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<tags>
+  <metatag event="onCuePoint">
+    <name>TestEvent1</name>
+    <timestamp>333</timestamp>
+    <parameters>
+      <index>1</index>
+      <says>Chapter 0</says>
+    </parameters>
+    <type>navigation</type>
+  </metatag>
+
+  <metatag event="onCuePoint">
+    <name>TestEvent2</name>
+    <timestamp>1000</timestamp>
+    <parameters>
+      <index>2</index>
+      <title>Chapter 1</title>
+    </parameters>
+    <type>navigation</type>
+  </metatag>
+  
+  <metatag event="onCuePoint">
+    <name>TestEvent3</name>
+    <timestamp>2000</timestamp>
+    <parameters>
+      <index>3</index>
+      <title>Chapter 2</title>
+    </parameters>
+    <type>navigation</type>
+  </metatag>
+</tags>
+
+
