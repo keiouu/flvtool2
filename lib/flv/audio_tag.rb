@@ -44,7 +44,9 @@ module FLV
     
     def after_initialize(new_object)
       @tag_type = AUDIO
-      read_header
+      if data_size > 0
+        read_header
+      end
     end
 
     def name
