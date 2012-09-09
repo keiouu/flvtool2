@@ -78,9 +78,10 @@ module FLV
       codec_id_and_frame_type = data_stream.read__UI8
       @frame_type = codec_id_and_frame_type >> 4
       @codec_id = codec_id_and_frame_type & 0xf
-
-      bit_sequence = data_stream.read(9).unpack('B72').to_s
-      
+      if @codec_id == H263VIDEOPACKET || @codec_id == SCREENVIDEOPACKET
+        bit_sequence = data_stream.read(9).unpack('B72').to_s
+      end
+    
       if @codec_id == H263VIDEOPACKET
         @width, @height = case bit2uint bit_sequence[30,3]
         when 0
